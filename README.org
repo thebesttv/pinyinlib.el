@@ -5,6 +5,14 @@
 Library for converting first letter of Pinyin to Simplified/Traditional Chinese
 characters.
 
+* 改用小鹤双拼而非拼音
+
+=gen.py= 使用 [[https://github.com/mozillazg/pinyin-data][=pinyin-data=]] 的数据生成小鹤双拼字典 =shuangpin-dict.el=.
+=pinyinlib.el= 会加载双拼字典.  依赖:
+#+begin_src bash
+  pip install Unidecode OpenCC
+#+end_src
+
 * Functions
 ** =pinyinlib-build-regexp-char=
    =pinyinlib-build-regexp-char= converts a letter to a regular expression

@@ -1,0 +1,3 @@
+[submodule "pinyin-data"]
+	path = pinyin-data
+	url = git@github.com:mozillazg/pinyin-data.git
