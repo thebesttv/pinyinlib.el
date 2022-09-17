@@ -31,7 +31,9 @@ PINYIN_FILES = [
     "./pinyin-data/kXHC1983.txt",
 ]
 
-OUTPUT = 'shuangpin-dict.el'
+TARGET_FILE  = 'pinyinlib.el'
+TARGET_START = ';;; DICT STARTS HERE'
+TARGET_END   = ';;; DICT ENDS HERE'
 
 initials2char = {}              # 声母转汉字 code point
 
@@ -99,22 +101,39 @@ def demo(s):
         print(char, l, [INITIALS2KEY[i] for i in l])
 
 
-def save_dict_as_elisp(var, file, converter=None):
-    print(f'Writing var "{var}" to {file} '
+def save_dict_as_elisp(var, converter=None):
+    print(f'Generate for var "{var}" '
           f'{"with" if converter is not None else "without"}'
           f' converter')
-    with open(file, 'a') as f:
-        f.write(f"(defconst {var} '(\n")
-        for i in range(26):
-            key = chr(i + ord('a'))
-            initials = KEY2INITIALS[key]
-            chars = ''.join(initials2char[initials])
-            if converter is not None:
-                chars = converter.convert(chars)
-            line = '  "' + chars + '"\n'
-            f.write(line)
-            print(f'  {key} -> {initials}: {len(chars)} chars')
-        f.write("))\n")
+    lines = [f"(defconst {var} '(\n"]
+    for i in range(26):
+        key = chr(i + ord('a'))
+        initials = KEY2INITIALS[key]
+        chars = ''.join(initials2char[initials])
+        if converter is not None:
+            chars = converter.convert(chars)
+        lines.append('  "' + chars + '"\n')
+        print(f'  {key} -> {initials}: {len(chars)} chars')
+    lines.append("))\n")
+    return lines
+
+
+def save_to_file(src_lines):
+    with open(TARGET_FILE) as f:
+        result = f.readlines()
+    l, r = -1, -1
+    for i, line in enumerate(result):
+        line = line.strip()
+        if line == TARGET_START:
+            assert l == -1
+            l = i
+        elif line == TARGET_END:
+            assert r == -1
+            r = i
+    assert l != -1 and r != -1
+    result[l+1:r] = src_lines
+    with open(TARGET_FILE, 'w') as f:
+        f.writelines(result)
 
 
 def main():
@@ -124,17 +143,18 @@ def main():
             KEY2INITIALS[i] = i
             INITIALS2KEY[i] = i
 
-    for file in PINYIN_FILES:
-        add_dict(file)
+    for f in PINYIN_FILES:
+        add_dict(f)
 
     demo('我看你是个大笨蛋')
     demo('重庆')
 
-    if os.path.exists(OUTPUT):
-        os.remove(OUTPUT)
-    save_dict_as_elisp("pinyinlib--simplified-char-table", OUTPUT)
-    save_dict_as_elisp("pinyinlib--traditional-char-table", OUTPUT,
-                       opencc.OpenCC('s2t.json'))
+    lines = []
+    lines += save_dict_as_elisp("pinyinlib--simplified-char-table")
+    lines += save_dict_as_elisp("pinyinlib--traditional-char-table",
+                                opencc.OpenCC('s2t.json'))
+
+    save_to_file(lines)
 
 if __name__ == "__main__":
     main()
